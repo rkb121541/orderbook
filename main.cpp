@@ -25,9 +25,57 @@ private:
 public:
   void addOrder(Order &order) {
     if (order.type == OrderType::buy) {
-      buyOrders[order.price].push(order);
+      while (!sellOrders.empty() && order.quantity > 0) {
+        auto bestAsk = sellOrders.begin();
+        if (bestAsk->first <= order.price) {
+          auto &sellQueue = bestAsk->second;
+          Order &sellOrder = sellQueue.front();
+          int matchQuantity = std::min(order.quantity, sellOrder.quantity);
+          std::cout << "TRADE: " << matchQuantity << " @ " << sellOrder.price
+                    << " (BUY: " << order.id << ", SELL: " << sellOrder.id
+                    << ")" << std::endl;
+          order.quantity -= matchQuantity;
+          sellOrder.quantity -= matchQuantity;
+          if (sellOrder.quantity == 0)
+            sellQueue.pop();
+          if (sellQueue.empty())
+            sellOrders.erase(bestAsk);
+        } else {
+          break;
+        }
+      }
+      if (order.quantity > 0) {
+        buyOrders[order.price].push(order);
+        std::cout << "Buy order added to book (Id: " << order.id
+                  << " Quantity: " << order.quantity
+                  << " Price: " << order.price << ")" << std::endl;
+      }
     } else {
-      sellOrders[order.price].push(order);
+      while (!buyOrders.empty() && order.quantity > 0) {
+        auto bestBid = buyOrders.begin();
+        if (bestBid->first >= order.price) {
+          auto &buyQueue = bestBid->second;
+          Order &buyOrder = buyQueue.front();
+          int matchQuantity = std::min(order.quantity, buyOrder.quantity);
+          std::cout << "TRADE: " << matchQuantity << " @ " << buyOrder.price
+                    << " (BUY: " << buyOrder.id << ", SELL: " << order.id << ")"
+                    << std::endl;
+          order.quantity -= matchQuantity;
+          buyOrder.quantity -= matchQuantity;
+          if (buyOrder.quantity == 0)
+            buyQueue.pop();
+          if (buyQueue.empty())
+            buyOrders.erase(bestBid);
+        } else {
+          break;
+        }
+      }
+      if (order.quantity > 0) {
+        sellOrders[order.price].push(order);
+        std::cout << "Sell order added to book (Id: " << order.id
+                  << " Quantity: " << order.quantity
+                  << " Price: " << order.price << ")" << std::endl;
+      }
     }
   }
 
@@ -35,47 +83,62 @@ public:
     std::cout << "BUY ORDERS:" << std::endl;
     for (const auto &priceToQueue : buyOrders) {
       int totalQuantity = 0;
-      std::vector<Id> orders;
+      std::vector<Id> ids;
       std::queue<Order> copyQueue = priceToQueue.second;
       std::cout << "Price: " << priceToQueue.first << " | ";
       while (!copyQueue.empty()) {
         Order copyOrder = copyQueue.front();
         totalQuantity += copyOrder.quantity;
-        orders.push_back(copyOrder.id);
+        ids.push_back(copyOrder.id);
         copyQueue.pop();
       }
       std::cout << "Quantity: " << totalQuantity << " | " << "Orders: ";
       std::cout << "[";
-      for (size_t i = 0; i < orders.size(); i++) {
-        if (i == orders.size() - 1) {
-          std::cout << orders[i] << "]" << std::endl;
+      for (size_t i = 0; i < ids.size(); i++) {
+        if (i == ids.size() - 1) {
+          std::cout << ids[i] << "]" << std::endl;
         } else {
-          std::cout << orders[i] << ", ";
+          std::cout << ids[i] << ", ";
         }
       }
     }
     std::cout << "SELL ORDERS:" << std::endl;
-    // for (const auto &priceToQueue : sellOrders) {
-    // }
+    for (const auto &priceToQueue : sellOrders) {
+      int totalQuantity = 0;
+      std::vector<Id> ids;
+      std::queue<Order> copyQueue = priceToQueue.second;
+      std::cout << "Price: " << priceToQueue.first << " | ";
+      while (!copyQueue.empty()) {
+        Order copyOrder = copyQueue.front();
+        totalQuantity += copyOrder.quantity;
+        ids.push_back(copyOrder.id);
+        copyQueue.pop();
+      }
+      std::cout << "Quantity: " << totalQuantity << " | " << "Orders: ";
+      std::cout << "[";
+      for (size_t i = 0; i < ids.size(); i++) {
+        if (i == ids.size() - 1) {
+          std::cout << ids[i] << "]" << std::endl;
+        } else {
+          std::cout << ids[i] << ", ";
+        }
+      }
+    }
   }
 };
 
 int main(int argc, char *argv[]) {
   OrderBook orderbook;
 
-  Order order1 = {"A1", OrderType::buy, 100.5, 10};
-  Order order2 = {"A2", OrderType::buy, 100.5, 20};
-  Order order3 = {"A3", OrderType::buy, 99.0, 15};
+  Order sell1 = {"S1", OrderType::sell, 99.0, 5};
+  Order sell2 = {"S2", OrderType::sell, 100.0, 10};
+  Order buy = {"B1", OrderType::buy, 100.0, 12};
 
-  // Order order4 = {"B1", OrderType::sell, 101.0, 5};
-  // Order order5 = {"B2", OrderType::sell, 102.5, 25};
-
-  orderbook.addOrder(order1);
-  orderbook.addOrder(order2);
-  orderbook.addOrder(order3);
-  // orderbook.addOrder(order4);
-  // orderbook.addOrder(order5);
-
+  orderbook.addOrder(sell1);
+  orderbook.printOrderBook();
+  orderbook.addOrder(sell2);
+  orderbook.printOrderBook();
+  orderbook.addOrder(buy);
   orderbook.printOrderBook();
 
   return 0;
