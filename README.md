@@ -5,8 +5,8 @@ This is my implementation of a limit order book for a single product
 - Only limit orders are supported (not market orders)
 
 - Trades execute only if certain conditions are met:
-  - Buy orders execute if the price $\ge$ lowest sell price/ limit price
-  - Sell orders execute if the price $\le$ highest buy price/ limit price
+  - Buy orders execute if the buy order's limit price $\ge$ lowest sell price
+  - Sell orders execute if the sell order's limit price $\le$ highest buy price
 
 - Only supports single product trade executions; have not looked into implementing/ handling multiple different products. This might be something I can do in the future.
 

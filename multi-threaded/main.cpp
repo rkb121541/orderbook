@@ -2,6 +2,7 @@
 #include <list>
 #include <map>
 #include <optional>
+#include <shared_mutex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -29,9 +30,12 @@ struct Trade {
 class OrderBook {
 private:
   std::map<Price, std::list<Order>, std::greater<>> buyOrders;
+  std::shared_mutex buyMutex;
   std::map<Price, std::list<Order>> sellOrders;
+  std::shared_mutex sellMutex;
   std::unordered_map<Id, std::pair<Price, std::list<Order>::iterator>>
       orderById;
+  std::shared_mutex idMutex;
   std::vector<Trade> trades;
 
 public:
